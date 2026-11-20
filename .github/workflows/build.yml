@@ -121,8 +121,8 @@ jobs:
           # Keep the service alive so the bubble can be restored after Lens closes.
           floating = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/FloatingAssistantService.kt")
           u = floating.read_text()
-          u = u.replace("import android.os.IBinder\\n", "import android.os.IBinder\\nimport android.os.Handler\\nimport android.os.Looper\\n")
-          u = u.replace("    private var opacity = 85\\n", "    private val lensHandler = Handler(Looper.getMainLooper())\\n    private var opacity = 85\\n")
+          u = u.replace("import android.os.IBinder\n", "import android.os.IBinder\nimport android.os.Handler\nimport android.os.Looper\n")
+          u = u.replace("    private var opacity = 85\n", "    private val lensHandler = Handler(Looper.getMainLooper())\n    private var opacity = 85\n")
           u = u.replace("    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY", """    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_HIDE_FOR_LENS -> {
@@ -141,7 +141,7 @@ jobs:
     }
 
     private fun removePanel() {""")
-          u = u.replace("        fun openLens(context: Context) {\\n            LensCaptureService.requestCapture(context)\\n        }", """        const val ACTION_HIDE_FOR_LENS = "id.friss.assist.HIDE_FOR_LENS"
+          u = u.replace("        fun openLens(context: Context) {\n            LensCaptureService.requestCapture(context)\n        }", """        const val ACTION_HIDE_FOR_LENS = "id.friss.assist.HIDE_FOR_LENS"
         const val ACTION_RESTORE_AFTER_LENS = "id.friss.assist.RESTORE_AFTER_LENS"
 
         fun openLens(context: Context) {
@@ -152,9 +152,9 @@ jobs:
           # Restore the assistant if the user cancels selection or OCR fails and they leave.
           lens = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/LensSelectionActivity.kt")
           t = lens.read_text()
-          t = t.replace("    private lateinit var content: LinearLayout\\n", "    private lateinit var content: LinearLayout\\n    private var handedOffToResults = false\\n")
-          t = t.replace("    private fun showInternalResults(query: String) {", "    private fun showInternalResults(query: String) {\\n        handedOffToResults = true")
-          t = t.replace("    override fun onDestroy() {\\n        screenshot?.recycle()", """    override fun onDestroy() {
+          t = t.replace("    private lateinit var content: LinearLayout\n", "    private lateinit var content: LinearLayout\n    private var handedOffToResults = false\n")
+          t = t.replace("    private fun showInternalResults(query: String) {", "    private fun showInternalResults(query: String) {\n        handedOffToResults = true")
+          t = t.replace("    override fun onDestroy() {\n        screenshot?.recycle()", """    override fun onDestroy() {
         if (!handedOffToResults) {
             try { startService(Intent(this, FloatingAssistantService::class.java).setAction(FloatingAssistantService.ACTION_RESTORE_AFTER_LENS)) } catch (_: Exception) {}
         }
@@ -165,7 +165,7 @@ jobs:
           overlay = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/LensResultOverlayService.kt")
           if overlay.exists():
               o = overlay.read_text()
-              o = o.replace("    override fun onDestroy() {\\n        panel?.let", """    override fun onDestroy() {
+              o = o.replace("    override fun onDestroy() {\n        panel?.let", """    override fun onDestroy() {
         try { startService(Intent(this, FloatingAssistantService::class.java).setAction(FloatingAssistantService.ACTION_RESTORE_AFTER_LENS)) } catch (_: Exception) {}
         panel?.let""")
               overlay.write_text(o)
