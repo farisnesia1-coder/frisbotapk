@@ -9,6 +9,13 @@ import android.provider.Settings
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.Shader
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
 import android.view.Gravity
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -23,19 +30,19 @@ class MainActivity : Activity() {
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);render()}
  override fun onResume(){super.onResume();if(::content.isInitialized)render()}
  private fun render(){
-  val page=LinearLayout(this).apply{orientation=1;setPadding(dp(20),dp(22),dp(20),dp(28));setBackgroundColor(Color.rgb(244,248,255))}
+  val page=LinearLayout(this).apply{orientation=1;setPadding(dp(22),dp(24),dp(22),dp(34));background=AnimatedBlueBackground()}
   val scroll=ScrollView(this).apply{isFillViewport=true;addView(page)}
-  val brand=LinearLayout(this).apply{orientation=0;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(16),dp(16),dp(16),dp(16));background=rounded(Color.WHITE,24,0xFFE1EBFA.toInt())}
-  brand.addView(ImageView(this).apply{setImageResource(R.drawable.ic_friss_robot);scaleType=ImageView.ScaleType.FIT_CENTER},LinearLayout.LayoutParams(dp(62),dp(62)))
+  val brand=LinearLayout(this).apply{orientation=0;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(22),dp(24),dp(22),dp(24));background=rounded(Color.WHITE,24,0xFFE1EBFA.toInt())}
+  brand.addView(ImageView(this).apply{setImageResource(R.drawable.ic_friss_robot);scaleType=ImageView.ScaleType.FIT_CENTER},LinearLayout.LayoutParams(dp(76),dp(76)))
   val bt=LinearLayout(this).apply{orientation=1;setPadding(dp(14),0,0,0)}
-  bt.addView(txt("ASISTEN FRISS",21f,ink,true));bt.addView(txt("Asisten pintar dalam satu panel",12f,muted,false))
+  bt.addView(txt("ASISTEN FRISS",24f,ink,true));bt.addView(txt("Smart tools. One floating assistant.",14f,muted,false))
   brand.addView(bt,LinearLayout.LayoutParams(0,-2,1f));page.addView(brand)
   val hero=LinearLayout(this).apply{orientation=1;setPadding(dp(18),dp(18),dp(18),dp(18));background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(0xFF126BEB.toInt(),0xFF3998FF.toInt())).apply{cornerRadius=dp(22).toFloat()}}
-  hero.addView(txt("FRISS SMART PANEL",17f,Color.WHITE,true))
-  hero.addView(txt("Aktifkan akses Lens dari aplikasi, lalu gunakan langsung lewat panel mengambang.",12f,0xFFEAF3FF.toInt(),false))
+  hero.addView(txt("FRISS SMART PANEL",22f,Color.WHITE,true))
+  hero.addView(txt("Akses Lens dan kontrol asisten langsung dari panel mengambang.",15f,0xFFEAF3FF.toInt(),false))
   page.addView(hero,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(14)})
-  page.addView(txt("Kontrol cepat",19f,ink,true).apply{setPadding(dp(2),dp(24),0,dp(4))})
-  page.addView(txt("Atur izin sebelum mulai menggunakan fitur.",13f,muted,false).apply{setPadding(dp(2),0,0,dp(14))})
+  page.addView(txt("Status perangkat",22f,ink,true).apply{setPadding(dp(2),dp(24),0,dp(4))})
+  page.addView(txt("Semua akses penting dalam satu tempat.",14f,muted,false).apply{setPadding(dp(2),0,0,dp(14))})
   val status=card()
   status.addView(statusRow("Izin tampil di atas aplikasi",Settings.canDrawOverlays(this)))
   status.addView(statusRow("Izin kontrol kecerahan",Settings.System.canWrite(this)))
@@ -67,8 +74,8 @@ class MainActivity : Activity() {
  }
  private fun card()=LinearLayout(this).apply{orientation=1;setPadding(dp(15),dp(10),dp(15),dp(10));background=rounded(Color.WHITE,20,0xFFE1EBFA.toInt())}
  private fun statusRow(s:String,ok:Boolean)=txt("$s  •  ${if(ok)"Aktif" else "Belum aktif"}",13f,if(ok)Color.rgb(18,137,86) else Color.rgb(190,120,24),true).apply{setPadding(0,dp(8),0,dp(8))}
- private fun action(p:LinearLayout,t:String,d:String,primary:Boolean=false,fn:()->Unit){val v=LinearLayout(this).apply{orientation=1;setPadding(dp(16),dp(14),dp(16),dp(14));background=rounded(if(primary)Color.rgb(232,241,255) else Color.WHITE,20,0xFFE1EBFA.toInt());isClickable=true;isFocusable=true;setOnClickListener{fn()}}
-  v.addView(txt(t,15f,if(primary)blue else ink,true));v.addView(txt(d,12f,muted,false).apply{setPadding(0,dp(5),0,0)});p.addView(v,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})}
+ private fun action(p:LinearLayout,t:String,d:String,primary:Boolean=false,fn:()->Unit){val v=LinearLayout(this).apply{orientation=1;setPadding(dp(20),dp(19),dp(20),dp(19));background=rounded(if(primary)Color.rgb(232,241,255) else Color.WHITE,20,0xFFE1EBFA.toInt());isClickable=true;isFocusable=true;setOnClickListener{fn()}}
+  v.addView(txt(t,18f,if(primary)blue else ink,true));v.addView(txt(d,14f,muted,false).apply{setPadding(0,dp(5),0,0)});p.addView(v,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(13)})}
  private fun txt(s:String,z:Float,c:Int,b:Boolean)=TextView(this).apply{text=s;textSize=z;setTextColor(c);if(b)typeface=Typeface.DEFAULT_BOLD}
  private fun rounded(c:Int,r:Int,s:Int)=GradientDrawable().apply{setColor(c);cornerRadius=dp(r).toFloat();setStroke(dp(1),s)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
