@@ -85,6 +85,19 @@ jobs:
 
           echo "Struktur project valid."
 
+      - name: Package Extracted Source
+        run: |
+          cd FRISS-ASSIST
+          zip -qr ../FRISS-ASSIST-SOURCE.zip .
+
+      - name: Upload Extracted Source
+        uses: actions/upload-artifact@v4
+        with:
+          name: FRISS-ASSIST-SOURCE
+          path: FRISS-ASSIST-SOURCE.zip
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Build Debug APK
         run: |
           gradle -p FRISS-ASSIST assembleDebug --stacktrace
