@@ -72,7 +72,7 @@ class LensResultOverlayService : Service() {
             setOnClickListener { stopSelf() }
         }
         header.addView(close)
-        header.setOnTouchListener(object : View.OnTouchListener {
+        title.setOnTouchListener(object : View.OnTouchListener {
             private var sx = 0f
             private var sy = 0f
             private var startX = 0
