@@ -120,10 +120,10 @@ jobs:
           # Keep both FRISS overlays completely off the screen while selecting.
           # Restore the bubble on cancel/failure, or when the floating results window closes.
           lens_source = lens.read_text()
-          lens_source = lens_source.replace("import android.app.Activity\\n", "import android.app.Activity\\nimport android.content.Intent\\nimport android.os.Build\\n")
-          lens_source = lens_source.replace("    private lateinit var content: LinearLayout\\n", "    private lateinit var content: LinearLayout\\n    private var handedOffToResults = false\\n")
-          lens_source = lens_source.replace("    private fun showInternalResults(query: String) {", "    private fun showInternalResults(query: String) {\\n        handedOffToResults = true")
-          lens_source = lens_source.replace("    override fun onDestroy() {\\n        screenshot?.recycle()", """    override fun onDestroy() {
+          lens_source = lens_source.replace("import android.app.Activity\n", "import android.app.Activity\nimport android.content.Intent\nimport android.os.Build\n")
+          lens_source = lens_source.replace("    private lateinit var content: LinearLayout\n", "    private lateinit var content: LinearLayout\n    private var handedOffToResults = false\n")
+          lens_source = lens_source.replace("    private fun showInternalResults(query: String) {", "    private fun showInternalResults(query: String) {\n        handedOffToResults = true")
+          lens_source = lens_source.replace("    override fun onDestroy() {\n        screenshot?.recycle()", """    override fun onDestroy() {
                 if (!handedOffToResults) {
                     val restore = Intent(this, FloatingAssistantService::class.java)
                     if (Build.VERSION.SDK_INT >= 26) startForegroundService(restore) else startService(restore)
@@ -134,7 +134,7 @@ jobs:
           overlay = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/LensResultOverlayService.kt")
           if overlay.exists():
               o = overlay.read_text()
-              o = o.replace("    override fun onDestroy() {\\n        panel?.let", """    override fun onDestroy() {
+              o = o.replace("    override fun onDestroy() {\n        panel?.let", """    override fun onDestroy() {
                 val restore = Intent(this, FloatingAssistantService::class.java)
                 if (Build.VERSION.SDK_INT >= 26) startForegroundService(restore) else startService(restore)
                 panel?.let""")
