@@ -137,6 +137,22 @@ jobs:
           u = u.replace('(box.getChildAt(2) as TextView).text = "Opacity logo: $opacity%"', '(box.getChildAt(4) as TextView).text = "Opacity logo: $opacity%"')
           floating.write_text(u)
 
+          # Route panel searches through the already-approved projection session.
+          u = floating.read_text()
+          old = """        fun openLens(context: Context) {
+                      context.startActivity(
+                          Intent(context, LensCaptureActivity::class.java)
+                              .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                      )
+                  }"""
+          new = """        fun openLens(context: Context) {
+                      LensCaptureService.requestCapture(context)
+                  }"""
+          if old not in u:
+              raise SystemExit("Could not locate floating Google Lens action")
+          u = u.replace(old, new)
+          floating.write_text(u)
+
           # Give the main app a richer blue feature banner while preserving its existing controls.
           main = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/MainActivity.kt")
           m = main.read_text()
