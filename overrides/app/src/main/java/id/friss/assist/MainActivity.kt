@@ -72,11 +72,11 @@ class MainActivity : Activity() {
   if(Build.VERSION.SDK_INT>=26)startForegroundService(s) else startService(s)
   Toast.makeText(this,"Izin Lens aktif. Tombol Google Lens di panel siap digunakan.",Toast.LENGTH_LONG).show();render()
  }
- private fun card()=LinearLayout(this).apply{orientation=1;setPadding(dp(15),dp(10),dp(15),dp(10));background=rounded(Color.WHITE,20,0xFFE1EBFA.toInt())}
+ private fun card()=LinearLayout(this).apply{orientation=1;setPadding(dp(18),dp(14),dp(18),dp(14));background=rounded(Color.WHITE,24,0xFFDCE8F8.toInt());elevation=dp(5).toFloat();clipToOutline=true}
  private fun statusRow(s:String,ok:Boolean)=txt("$s  •  ${if(ok)"Aktif" else "Belum aktif"}",13f,if(ok)Color.rgb(18,137,86) else Color.rgb(190,120,24),true).apply{setPadding(0,dp(8),0,dp(8))}
- private fun action(p:LinearLayout,t:String,d:String,primary:Boolean=false,fn:()->Unit){val v=LinearLayout(this).apply{orientation=1;setPadding(dp(20),dp(19),dp(20),dp(19));background=rounded(if(primary)Color.rgb(232,241,255) else Color.WHITE,20,0xFFE1EBFA.toInt());isClickable=true;isFocusable=true;setOnClickListener{fn()}}
+ private fun action(p:LinearLayout,t:String,d:String,primary:Boolean=false,fn:()->Unit){val v=LinearLayout(this).apply{orientation=1;setPadding(dp(22),dp(21),dp(22),dp(21));background=rounded(if(primary)Color.rgb(229,240,255) else Color.WHITE,24,if(primary)0xFFB8D4FF.toInt() else 0xFFDCE8F8.toInt());elevation=dp(if(primary)5 else 3).toFloat();minimumHeight=dp(82);isClickable=true;isFocusable=true;setOnClickListener{fn()}}
   v.addView(txt(t,18f,if(primary)blue else ink,true));v.addView(txt(d,14f,muted,false).apply{setPadding(0,dp(5),0,0)});p.addView(v,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(13)})}
- private fun txt(s:String,z:Float,c:Int,b:Boolean)=TextView(this).apply{text=s;textSize=z;setTextColor(c);if(b)typeface=Typeface.DEFAULT_BOLD}
+ private fun txt(s:String,z:Float,c:Int,b:Boolean)=TextView(this).apply{text=s;textSize=z;setTextColor(c);typeface=Typeface.create(if(b)"sans-serif-medium" else "sans-serif",if(b)Typeface.BOLD else Typeface.NORMAL);letterSpacing=if(b)0.01f else 0f;includeFontPadding=true}
  private fun rounded(c:Int,r:Int,s:Int)=GradientDrawable().apply{setColor(c);cornerRadius=dp(r).toFloat();setStroke(dp(1),s)}
  private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
 }
