@@ -141,12 +141,12 @@ jobs:
     }
 
     private fun removePanel() {""")
-          u = u.replace("        fun openLens(context: Context) {\n            LensCaptureService.requestCapture(context)\n        }", """        const val ACTION_HIDE_FOR_LENS = "id.friss.assist.HIDE_FOR_LENS"
+          u = re.sub(r'        fun openLens\\(context: Context\\) \\{.*?\\n        \\}', """        const val ACTION_HIDE_FOR_LENS = "id.friss.assist.HIDE_FOR_LENS"
         const val ACTION_RESTORE_AFTER_LENS = "id.friss.assist.RESTORE_AFTER_LENS"
 
         fun openLens(context: Context) {
             context.startService(Intent(context, FloatingAssistantService::class.java).setAction(ACTION_HIDE_FOR_LENS))
-        }""")
+        }""", u, count=1, flags=re.S)
           floating.write_text(u)
 
           # Restore the assistant if the user cancels selection or OCR fails and they leave.
