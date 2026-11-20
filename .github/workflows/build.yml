@@ -100,34 +100,38 @@ jobs:
           u = floating.read_text().replace("opacity = progress.coerceAtLeast(15)", "opacity = progress.coerceIn(0, 100)")
           floating.write_text(u)
 
+          import textwrap
           # Add persistent floating-button size control to the assistant panel.
           u = floating.read_text()
           u = u.replace('    private var opacity = 85\n', '    private var opacity = 85\n    private var bubbleSize = 58\n    private val prefs by lazy { getSharedPreferences("friss_settings", MODE_PRIVATE) }\n')
           u = u.replace('        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager\n', '        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager\n        opacity = prefs.getInt("bubble_opacity", 85)\n        bubbleSize = prefs.getInt("bubble_size", 58).coerceIn(42, 92)\n')
           u = u.replace('WindowManager.LayoutParams(dp(58), dp(58), overlayType(),', 'WindowManager.LayoutParams(dp(bubbleSize), dp(bubbleSize), overlayType(),')
-          size_code = '''        addLabel(box, "Ukuran tombol panel: ${bubbleSize}dp")
-        val sizeSeek = SeekBar(this).apply {
-            max = 50
-            progress = bubbleSize - 42
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    bubbleSize = (42 + progress).coerceIn(42, 92)
-                    prefs.edit().putInt("bubble_size", bubbleSize).apply()
-                    bubble?.let { view -> bubbleParams?.let { params ->
-                        params.width = dp(bubbleSize)
-                        params.height = dp(bubbleSize)
-                        try { windowManager.updateViewLayout(view, params) } catch (_: Exception) {}
-                    } }
-                    (box.getChildAt(2) as TextView).text = "Ukuran tombol panel: ${bubbleSize}dp"
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-        box.addView(sizeSeek)
+          size_code = '''
+              addLabel(box, "Ukuran tombol panel: ${bubbleSize}dp")
+              val sizeSeek = SeekBar(this).apply {
+              max = 50
+              progress = bubbleSize - 42
+              setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+              override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+              if (!fromUser) return
+              bubbleSize = (42 + progress).coerceIn(42, 92)
+              prefs.edit().putInt("bubble_size", bubbleSize).apply()
+              bubble?.let { view -> bubbleParams?.let { params ->
+              params.width = dp(bubbleSize)
+              params.height = dp(bubbleSize)
+              try { windowManager.updateViewLayout(view, params) } catch (_: Exception) {}
+              } }
+              (box.getChildAt(2) as TextView).text = "Ukuran tombol panel: ${bubbleSize}dp"
+              }
+              override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+              override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+              })
+              }
+              box.addView(sizeSeek)
 
-'''
+
+          '''
+          size_code = textwrap.dedent(size_code)
           u = u.replace('        addLabel(box, "Opacity logo: $opacity%")\n', size_code + '        addLabel(box, "Opacity logo: $opacity%")\n')
           u = u.replace('                    opacity = progress.coerceIn(0, 100)\n', '                    opacity = progress.coerceIn(0, 100)\n                    prefs.edit().putInt("bubble_opacity", opacity).apply()\n')
           u = u.replace('(box.getChildAt(2) as TextView).text = "Opacity logo: $opacity%"', '(box.getChildAt(4) as TextView).text = "Opacity logo: $opacity%"')
@@ -136,17 +140,20 @@ jobs:
           # Give the main app a richer blue feature banner while preserving its existing controls.
           main = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/MainActivity.kt")
           m = main.read_text()
-          hero = '''        val hero = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(0xFF126BEB.toInt(), 0xFF3998FF.toInt())).apply { cornerRadius = dp(22).toFloat() }
-        }
-        hero.addView(text("FRISS SMART PANEL", 17f, Color.WHITE, true))
-        hero.addView(text("Akses Lens, kontrol layar, dan tombol mengambang dalam satu asisten.", 12f, 0xFFEAF3FF.toInt(), false).apply { setPadding(0, dp(6), 0, 0) })
-        hero.addView(text("QUICK ACCESS  •  PERSONAL CONTROL", 9f, 0xFFD5E8FF.toInt(), true).apply { setPadding(0, dp(12), 0, 0) })
-        page.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
-'''
+          hero = '''
+              val hero = LinearLayout(this).apply {
+              orientation = LinearLayout.VERTICAL
+              setPadding(dp(18), dp(18), dp(18), dp(18))
+              background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+              intArrayOf(0xFF126BEB.toInt(), 0xFF3998FF.toInt())).apply { cornerRadius = dp(22).toFloat() }
+              }
+              hero.addView(text("FRISS SMART PANEL", 17f, Color.WHITE, true))
+              hero.addView(text("Akses Lens, kontrol layar, dan tombol mengambang dalam satu asisten.", 12f, 0xFFEAF3FF.toInt(), false).apply { setPadding(0, dp(6), 0, 0) })
+              hero.addView(text("QUICK ACCESS  •  PERSONAL CONTROL", 9f, 0xFFD5E8FF.toInt(), true).apply { setPadding(0, dp(12), 0, 0) })
+              page.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+
+          '''
+          hero = textwrap.dedent(hero)
           m = m.replace('        page.addView(brand)\n', '        page.addView(brand)\n' + hero)
           main.write_text(m)
           PY
