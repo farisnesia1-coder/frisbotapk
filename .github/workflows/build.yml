@@ -75,6 +75,15 @@ jobs:
             cp -a overrides/. FRISS-ASSIST/
           fi
           echo "FRISS overrides applied."
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/FloatingAssistantService.kt")
+          s = p.read_text()
+          s = s.replace('text = "F"', 'text = "AF"')
+          s = s.replace('text = "FRISS ASSIST"\\n            textSize = 18f', 'text = "ASISTEN FRISS"\\n            textSize = 18f')
+          s = s.replace('setTextColor(blue)\\n        })\\n        box.addView(TextView(this).apply {\\n            text = "Quick control"', 'setTextColor(blue)\\n            setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_friss_robot, 0, 0, 0)\\n            compoundDrawablePadding = dp(8)\\n        })\\n        box.addView(TextView(this).apply {\\n            text = "Quick control"')
+          p.write_text(s)
+          PY
 
       - name: Verify Android Project
         run: |
