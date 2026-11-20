@@ -1,0 +1,47 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:label="ASISTEN FRISS"
+        android:icon="@drawable/ic_friss_robot"
+        android:roundIcon="@drawable/ic_friss_robot"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="false">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Required: both the home screen and floating panel launch this activity. -->
+        <activity
+            android:name=".LensCaptureActivity"
+            android:exported="false"
+            android:theme="@style/LensTheme" />
+        <activity
+            android:name=".LensSelectionActivity"
+            android:exported="false"
+            android:theme="@style/LensTheme" />
+
+        <service
+            android:name=".LensCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+        <service
+            android:name=".FloatingAssistantService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-initiated floating assistant overlay controls" />
+        </service>
+    </application>
+</manifest>
