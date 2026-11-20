@@ -117,6 +117,29 @@ jobs:
               raise SystemExit("Could not replace Lens results screen with floating overlay handoff")
           lens.write_text(lens_source)
 
+          # Keep both FRISS overlays completely off the screen while selecting.
+          # Restore the bubble on cancel/failure, or when the floating results window closes.
+          lens_source = lens.read_text()
+          lens_source = lens_source.replace("import android.app.Activity\\n", "import android.app.Activity\\nimport android.content.Intent\\nimport android.os.Build\\n")
+          lens_source = lens_source.replace("    private lateinit var content: LinearLayout\\n", "    private lateinit var content: LinearLayout\\n    private var handedOffToResults = false\\n")
+          lens_source = lens_source.replace("    private fun showInternalResults(query: String) {", "    private fun showInternalResults(query: String) {\\n        handedOffToResults = true")
+          lens_source = lens_source.replace("    override fun onDestroy() {\\n        screenshot?.recycle()", """    override fun onDestroy() {
+                if (!handedOffToResults) {
+                    val restore = Intent(this, FloatingAssistantService::class.java)
+                    if (Build.VERSION.SDK_INT >= 26) startForegroundService(restore) else startService(restore)
+                }
+                screenshot?.recycle()""")
+          lens.write_text(lens_source)
+
+          overlay = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/LensResultOverlayService.kt")
+          if overlay.exists():
+              o = overlay.read_text()
+              o = o.replace("    override fun onDestroy() {\\n        panel?.let", """    override fun onDestroy() {
+                val restore = Intent(this, FloatingAssistantService::class.java)
+                if (Build.VERSION.SDK_INT >= 26) startForegroundService(restore) else startService(restore)
+                panel?.let""")
+              overlay.write_text(o)
+
           # Opacity 0% must fully hide the floating logo.
           floating = Path("FRISS-ASSIST/app/src/main/java/id/friss/assist/FloatingAssistantService.kt")
           u = floating.read_text().replace("opacity = progress.coerceAtLeast(15)", "opacity = progress.coerceIn(0, 100)")
@@ -168,6 +191,7 @@ jobs:
                       )
                   }"""
           new = """        fun openLens(context: Context) {
+                      context.stopService(Intent(context, FloatingAssistantService::class.java))
                       LensCaptureService.requestCapture(context)
                   }"""
           if old not in u:
