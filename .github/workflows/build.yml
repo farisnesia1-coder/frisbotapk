@@ -67,6 +67,15 @@ jobs:
           echo "Isi folder project:"
           ls -la FRISS-ASSIST
 
+      - name: Apply FRISS source fixes
+        shell: bash
+        run: |
+          set -e
+          if [ -d overrides/app ]; then
+            cp -a overrides/. FRISS-ASSIST/
+          fi
+          echo "FRISS overrides applied."
+
       - name: Verify Android Project
         run: |
           set -e
