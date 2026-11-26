@@ -12,6 +12,8 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
@@ -134,7 +136,13 @@ class FloatingAssistantService : Service() {
             })
         }
         addLabel(box, "Kecerahan layar"); box.addView(brightnessSeek)
-        addAction(box, "Google Lens", true) { removePanel(); AccessibilityCaptureService.requestCapture(this) }
+        addAction(box, "Google Lens", true) {
+            // Hilangkan panel dari layar sebelum Accessibility mengambil screenshot.
+            removePanel()
+            Handler(Looper.getMainLooper()).postDelayed({
+                AccessibilityCaptureService.requestCapture(this@FloatingAssistantService)
+            }, 350)
+        }
         addAction(box, "Sembunyikan panel", false) { removePanel() }
         addAction(box, "Matikan panel", false) { stopSelf() }
 
