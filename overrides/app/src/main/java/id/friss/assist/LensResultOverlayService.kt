@@ -125,8 +125,6 @@ class LensResultOverlayService : Service() {
     override fun onDestroy() {
         panel?.let { try { wm.removeView(it) } catch (_: Exception) {} }
         panel = null
-        val restore = Intent(this, FloatingAssistantService::class.java)
-        if (Build.VERSION.SDK_INT >= 26) startForegroundService(restore) else startService(restore)
         super.onDestroy()
     }
 
