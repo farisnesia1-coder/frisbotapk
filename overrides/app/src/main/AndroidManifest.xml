@@ -18,7 +18,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".LensSelectionActivity" android:exported="false" android:theme="@style/LensTheme" />
+        <service android:name=".LensSelectionOverlayService" android:exported="false" />
         <service android:name=".LensResultOverlayService" android:exported="false" />
         <service
             android:name=".AccessibilityCaptureService"
