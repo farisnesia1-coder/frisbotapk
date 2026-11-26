@@ -2,6 +2,7 @@ package id.friss.assist
 
 import android.app.Activity
 import android.content.Intent
+import android.content.ComponentName
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -78,8 +79,13 @@ class MainActivity : Activity() {
         action(page, "Izinkan kontrol kecerahan", "Mengatur brightness dari panel") {
             startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")))
         }
-        action(page, "Aktifkan screenshot tanpa MediaProjection", "Aktifkan layanan aksesibilitas FRISS. Android tetap meminta persetujuan manual.", true) {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        action(page, if (isAccessibilityEnabled()) "Accessibility sudah aktif" else "Aktifkan screenshot tanpa MediaProjection",
+            if (isAccessibilityEnabled()) "Izin tersimpan. Tidak perlu diaktifkan ulang setiap kali scan." else "Aktifkan layanan aksesibilitas FRISS satu kali melalui pengaturan Android.", true) {
+            if (isAccessibilityEnabled()) {
+                Toast.makeText(this, "Accessibility FRISS sudah aktif.", Toast.LENGTH_SHORT).show()
+            } else {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
         }
         action(page, "Aktifkan bot", "Tampilkan tombol robot ASISTEN FRISS") {
             if (!Settings.canDrawOverlays(this)) {
@@ -103,9 +109,12 @@ class MainActivity : Activity() {
 
     private fun isAccessibilityEnabled(): Boolean {
         val manager = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val expected = "$packageName/id.friss.assist.AccessibilityCaptureService"
+        val target = ComponentName(this, AccessibilityCaptureService::class.java)
         return manager.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-            .any { it.resolveInfo.serviceInfo.let { info -> "${info.packageName}/${info.name}" == expected } }
+            .any { service ->
+                val info = service.resolveInfo.serviceInfo
+                info.packageName == target.packageName && info.name == target.className
+            }
     }
 
     private fun card() = LinearLayout(this).apply {
