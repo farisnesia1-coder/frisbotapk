@@ -134,7 +134,7 @@ class FloatingAssistantService : Service() {
             })
         }
         addLabel(box, "Kecerahan layar"); box.addView(brightnessSeek)
-        addAction(box, "Google Lens", true) { openLens(this) }
+        addAction(box, "Google Lens", true) { removePanel(); AccessibilityCaptureService.requestCapture(this) }
         addAction(box, "Sembunyikan panel", false) { removePanel() }
         addAction(box, "Matikan panel", false) { stopSelf() }
 
@@ -193,10 +193,5 @@ class FloatingAssistantService : Service() {
     }
     override fun onBind(intent: Intent?) = null
 
-    companion object {
-        fun openLens(context: Context) {
-            context.stopService(Intent(context, FloatingAssistantService::class.java))
-            AccessibilityCaptureService.requestCapture(context)
-        }
-    }
+    companion object
 }
