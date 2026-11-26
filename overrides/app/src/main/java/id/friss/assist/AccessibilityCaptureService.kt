@@ -73,8 +73,9 @@ class AccessibilityCaptureService : AccessibilityService() {
         fun requestCapture(context: Context) {
             val service = instance
             if (service == null) {
-                Toast.makeText(context, "Aktifkan Layanan Aksesibilitas FRISS ASSIST di Pengaturan.", Toast.LENGTH_LONG).show()
-                context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                // Jangan melempar pengguna ke Settings setiap kali scan.
+                // Android dapat membutuhkan waktu untuk menghubungkan ulang service.
+                Toast.makeText(context, "Layanan FRISS belum siap. Tunggu sebentar lalu coba scan lagi; izin tidak perlu diaktifkan ulang.", Toast.LENGTH_LONG).show()
                 return
             }
             service.captureCurrentScreen()
