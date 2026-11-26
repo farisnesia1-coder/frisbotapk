@@ -193,5 +193,4 @@ class FloatingAssistantService : Service() {
     }
     override fun onBind(intent: Intent?) = null
 
-    companion object
 }
