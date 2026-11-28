@@ -17,7 +17,6 @@ import android.content.Context
 import android.view.View
 import android.view.MotionEvent
 import android.graphics.Rect
-import android.app.AlertDialog
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -75,7 +74,7 @@ class AiOverlayPanelService : Service() {
         val settings = Button(this).apply {
             text = "Ukuran"; isAllCaps = false; textSize = 12f
             setTextColor(ink); backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEAF2FF.toInt())
-            setOnClickListener { showSizeOptions() }
+            setOnClickListener { cyclePanelSize() }
         }
         header.addView(settings, LinearLayout.LayoutParams(dp(72), dp(40)).apply { rightMargin = dp(6) })
         val close = Button(this).apply {
@@ -177,17 +176,13 @@ class AiOverlayPanelService : Service() {
         } catch (_: Exception) { root = null; panelParams = null; stopSelf() }
     }
 
-    private fun showSizeOptions() {
-        val options = arrayOf("Kecil (60% layar)", "Sedang (76% layar)", "Besar (88% layar)")
-        val heights = floatArrayOf(0.60f, 0.76f, 0.88f).map { (resources.displayMetrics.heightPixels * it).toInt() }.toIntArray()
-        AlertDialog.Builder(this)
-            .setTitle("Ukuran jendela AI")
-            .setItems(options) { _, which ->
-                basePanelHeight = heights[which].coerceAtLeast(dp(320))
-                panelParams?.let { it.height = basePanelHeight; try { root?.let { view -> wm.updateViewLayout(view, it) } } catch (_: Exception) {} }
-            }
-            .setNegativeButton("Batal", null)
-            .show()
+    private var sizePreset = 1
+    private fun cyclePanelSize() {
+        val heights = floatArrayOf(0.60f, 0.76f, 0.88f)
+        sizePreset = (sizePreset + 1) % heights.size
+        basePanelHeight = (resources.displayMetrics.heightPixels * heights[sizePreset]).toInt().coerceAtLeast(dp(320))
+        panelParams?.let { it.height = basePanelHeight; try { root?.let { view -> wm.updateViewLayout(view, it) } } catch (_: Exception) {} }
+        Toast.makeText(this, "Ukuran panel: ${arrayOf("Kecil", "Sedang", "Besar")[sizePreset]}", Toast.LENGTH_SHORT).show()
     }
 
     private var resizeStartX = 0f
