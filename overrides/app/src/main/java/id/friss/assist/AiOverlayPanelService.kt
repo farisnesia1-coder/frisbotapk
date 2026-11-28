@@ -15,6 +15,9 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.content.Context
 import android.view.View
+import android.view.MotionEvent
+import android.graphics.Rect
+import android.app.AlertDialog
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -33,6 +36,8 @@ import java.util.concurrent.Executors
 class AiOverlayPanelService : Service() {
     private lateinit var wm: WindowManager
     private var root: LinearLayout? = null
+    private var panelParams: WindowManager.LayoutParams? = null
+    private var basePanelHeight = 0
     private lateinit var messages: LinearLayout
     private lateinit var scroll: ScrollView
     private lateinit var input: EditText
@@ -67,6 +72,12 @@ class AiOverlayPanelService : Service() {
         heading.addView(text("FRISS AI", 19f, ink, true))
         heading.addView(text("Asisten pintar di atas aplikasi", 11f, muted, false))
         header.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
+        val settings = Button(this).apply {
+            text = "Ukuran"; isAllCaps = false; textSize = 12f
+            setTextColor(ink); backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEAF2FF.toInt())
+            setOnClickListener { showSizeOptions() }
+        }
+        header.addView(settings, LinearLayout.LayoutParams(dp(72), dp(40)).apply { rightMargin = dp(6) })
         val close = Button(this).apply {
             text = "Tutup"; isAllCaps = false; textSize = 12f
             setTextColor(ink); backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEAF2FF.toInt())
@@ -128,6 +139,14 @@ class AiOverlayPanelService : Service() {
         composer.addView(sendButton, LinearLayout.LayoutParams(dp(72), dp(42)))
         page.addView(composer)
 
+        val resizeGrip = TextView(this).apply {
+            text = "━━━━━━━━   Tarik untuk ubah ukuran   ━━━━━━━━"
+            textSize = 10f; gravity = Gravity.CENTER; setTextColor(muted)
+            setPadding(0, dp(8), 0, dp(2))
+            setOnTouchListener { _, event -> handleResizeTouch(event); true }
+        }
+        page.addView(resizeGrip, LinearLayout.LayoutParams(-1, dp(30)))
+
         val lp = WindowManager.LayoutParams(
             (resources.displayMetrics.widthPixels - dp(28)).coerceAtLeast(dp(260)),
             (resources.displayMetrics.heightPixels * 0.76f).toInt().coerceAtLeast(dp(360)),
@@ -136,10 +155,63 @@ class AiOverlayPanelService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
-            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
         }
+        basePanelHeight = lp.height
+        panelParams = lp
         root = page
-        try { wm.addView(page, lp) } catch (_: Exception) { root = null; stopSelf() }
+        try {
+            wm.addView(page, lp)
+            page.viewTreeObserver.addOnGlobalLayoutListener {
+                val visible = Rect()
+                page.getWindowVisibleDisplayFrame(visible)
+                val screenHeight = resources.displayMetrics.heightPixels
+                val keyboardVisible = screenHeight - visible.bottom > dp(180)
+                val params = panelParams ?: return@addOnGlobalLayoutListener
+                val targetHeight = if (keyboardVisible) minOf(basePanelHeight, (visible.height() - dp(16)).coerceAtLeast(dp(260))) else basePanelHeight
+                if (params.height != targetHeight) {
+                    params.height = targetHeight
+                    try { wm.updateViewLayout(page, params) } catch (_: Exception) {}
+                }
+            }
+        } catch (_: Exception) { root = null; panelParams = null; stopSelf() }
+    }
+
+    private fun showSizeOptions() {
+        val options = arrayOf("Kecil (60% layar)", "Sedang (76% layar)", "Besar (88% layar)")
+        val heights = intArrayOf(0.60f, 0.76f, 0.88f).map { (resources.displayMetrics.heightPixels * it).toInt() }.toIntArray()
+        AlertDialog.Builder(this)
+            .setTitle("Ukuran jendela AI")
+            .setItems(options) { _, which ->
+                basePanelHeight = heights[which].coerceAtLeast(dp(320))
+                panelParams?.let { it.height = basePanelHeight; try { root?.let { view -> wm.updateViewLayout(view, it) } } catch (_: Exception) {} }
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private var resizeStartX = 0f
+    private var resizeStartY = 0f
+    private var resizeStartWidth = 0
+    private var resizeStartHeight = 0
+    private fun handleResizeTouch(event: MotionEvent) {
+        val params = panelParams ?: return
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                resizeStartX = event.rawX; resizeStartY = event.rawY
+                resizeStartWidth = params.width; resizeStartHeight = basePanelHeight
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val maxWidth = resources.displayMetrics.widthPixels - dp(16)
+                val minWidth = dp(260)
+                params.width = (resizeStartWidth + ((event.rawX - resizeStartX) * 2).toInt()).coerceIn(minWidth, maxWidth)
+                basePanelHeight = (resizeStartHeight + ((event.rawY - resizeStartY) * 2).toInt()).coerceIn(dp(320), (resources.displayMetrics.heightPixels * 0.92f).toInt())
+                val visible = Rect(); root?.getWindowVisibleDisplayFrame(visible)
+                val keyboardVisible = resources.displayMetrics.heightPixels - visible.bottom > dp(180)
+                params.height = if (keyboardVisible) minOf(basePanelHeight, (visible.height() - dp(16)).coerceAtLeast(dp(260))) else basePanelHeight
+                try { root?.let { wm.updateViewLayout(it, params) } } catch (_: Exception) {}
+            }
+        }
     }
 
     private fun sendMessage() {
@@ -277,6 +349,7 @@ class AiOverlayPanelService : Service() {
     override fun onDestroy() {
         root?.let { try { wm.removeView(it) } catch (_: Exception) {} }
         root = null
+        panelParams = null
         executor.shutdownNow()
         super.onDestroy()
     }
