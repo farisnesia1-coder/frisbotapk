@@ -79,6 +79,7 @@ class AiOverlayPanelService : Service() {
             text = "⌕   Cari dengan Google Lens"; isAllCaps = false; textSize = 13f
             setTextColor(Color.WHITE); backgroundTintList = android.content.res.ColorStateList.valueOf(blue)
             setOnClickListener {
+                FloatingAssistantService.hidePanelForLens()
                 stopSelf()
                 main.postDelayed({
                     AccessibilityCaptureService.requestCapture(applicationContext)
