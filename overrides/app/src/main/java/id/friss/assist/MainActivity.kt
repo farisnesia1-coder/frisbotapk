@@ -1,6 +1,7 @@
 package id.friss.assist
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.ComponentName
 import android.net.Uri
@@ -13,10 +14,12 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.widget.ImageView
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.text.InputType
 
 class MainActivity : Activity() {
     private val blue = 0xFF1677FF.toInt()
@@ -73,6 +76,13 @@ class MainActivity : Activity() {
         status.addView(statusRow("Accessibility screenshot", isAccessibilityEnabled()))
         page.addView(status)
 
+        val keySaved = getSharedPreferences("friss_ai", MODE_PRIVATE)
+            .getString("enrai_api_key", "").orEmpty().isNotBlank()
+        page.addView(statusRow("Koneksi Enrai API", keySaved))
+        action(page, "Atur API Enrai", "Masukkan API key satu kali agar chat FRISS AI bisa digunakan") {
+            showEnraiKeyDialog()
+        }
+
         action(page, "Izinkan overlay", "Agar panel FRISS tampil di atas aplikasi lain") {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
@@ -105,6 +115,42 @@ class MainActivity : Activity() {
             setPadding(0, dp(24), 0, 0)
         })
         setContentView(scroll)
+    }
+
+    private fun showEnraiKeyDialog() {
+        val prefs = getSharedPreferences("friss_ai", MODE_PRIVATE)
+        val field = EditText(this).apply {
+            hint = "Tempel API key Enrai"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setSingleLine(true)
+            setText(prefs.getString("enrai_api_key", "").orEmpty())
+            setSelection(text.length)
+        }
+        val wrap = LinearLayout(this).apply {
+            setPadding(dp(22), dp(8), dp(22), 0)
+            addView(field, LinearLayout.LayoutParams(-1, -2))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Hubungkan Enrai")
+            .setMessage("API key disimpan di penyimpanan privat aplikasi pada perangkat ini. Jangan bagikan key ke orang lain.")
+            .setView(wrap)
+            .setPositiveButton("Simpan") { _, _ ->
+                val key = field.text?.toString()?.trim().orEmpty()
+                if (key.startsWith("sk-enrai-") && key.length > 20) {
+                    prefs.edit().putString("enrai_api_key", key).apply()
+                    Toast.makeText(this, "API Enrai tersimpan.", Toast.LENGTH_SHORT).show()
+                    render()
+                } else {
+                    Toast.makeText(this, "API key Enrai belum valid. Periksa kembali.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNeutralButton("Hapus key") { _, _ ->
+                prefs.edit().remove("enrai_api_key").apply()
+                Toast.makeText(this, "API key dihapus dari perangkat.", Toast.LENGTH_SHORT).show()
+                render()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private fun isAccessibilityEnabled(): Boolean {
