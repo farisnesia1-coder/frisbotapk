@@ -249,27 +249,44 @@ class AiOverlayPanelService : Service() {
         val loading = addMessage("assistant", "FRISS AI sedang mengetik  ···")
         executor.execute {
             try {
-                val context = history.takeLast(10).joinToString("\n") { (role, value) ->
-                    (if (role == "user") "Pengguna: " else "FRISS AI: ") + value
+                val apiKey = getSharedPreferences("friss_ai", MODE_PRIVATE)
+                    .getString("enrai_api_key", "").orEmpty().trim()
+                if (apiKey.isBlank()) {
+                    throw Exception("API key Enrai belum diatur. Buka FRISS ASSIST lalu pilih Atur API Enrai.")
                 }
                 val system = "Kamu adalah FRISS AI, asisten Android buatan Faris. Jawab dalam bahasa Indonesia yang santai, natural, jelas, dan ringkas. Gunakan gua/lu seperlunya dan emoji secukupnya. Jangan mengarang fakta. Untuk soal latihan, jelaskan proses berpikir ringkas dan pembahasannya. Jika konteksnya ujian aktif, arahkan untuk belajar konsep, bukan mengerjakan ujian."
-                val url = URL("https://api.siputzx.my.id/api/ai/gptoss120b?prompt=" +
-                    URLEncoder.encode(context, "UTF-8") +
-                    "&system=" + URLEncoder.encode(system, "UTF-8") +
-                    "&temperature=0.7")
-                val conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 18000
-                    readTimeout = 30000
+                val apiMessages = JSONArray().put(
+                    JSONObject().put("role", "system").put("content", system)
+                )
+                history.takeLast(10).forEach { (role, value) ->
+                    apiMessages.put(JSONObject().put("role", role).put("content", value))
+                }
+                val payload = JSONObject()
+                    .put("model", "Chatgpt")
+                    .put("messages", apiMessages)
+                    .put("temperature", 0.7)
+                val conn = (URL("https://enrai.web.id/v1/chat/completions").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 20000
+                    readTimeout = 45000
+                    doOutput = true
+                    setRequestProperty("Authorization", "Bearer $apiKey")
+                    setRequestProperty("Content-Type", "application/json; charset=utf-8")
                     setRequestProperty("Accept", "application/json")
                 }
+                conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
                 val code = conn.responseCode
                 val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-                val body = stream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val body = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
                 conn.disconnect()
-                if (code !in 200..299) throw Exception("Server API membalas HTTP $code")
+                if (code !in 200..299) {
+                    val detail = try {
+                        JSONObject(body).optJSONObject("error")?.optString("message").orEmpty()
+                    } catch (_: Exception) { "" }
+                    throw Exception(if (detail.isNotBlank()) detail else "Server Enrai membalas HTTP $code")
+                }
                 val answer = extractAnswer(body)
-                if (answer.isBlank()) throw Exception("Respons API kosong atau formatnya belum dikenali.")
+                if (answer.isBlank()) throw Exception("Respons Enrai kosong atau formatnya belum dikenali.")
                 main.post {
                     removeMessage(loading)
                     addMessage("assistant", answer)
@@ -288,33 +305,21 @@ class AiOverlayPanelService : Service() {
 
     private fun extractAnswer(raw: String): String {
         val json = JSONObject(raw)
-        val keys = listOf("result", "response", "answer", "message", "text", "output", "content")
-        fun find(value: Any?): String? {
-            when (value) {
-                is JSONObject -> {
-                    for (key in keys) {
-                        if (value.has(key)) {
-                            val found = find(value.opt(key))
-                            if (!found.isNullOrBlank()) return found
-                        }
-                    }
-                    val it = value.keys()
-                    while (it.hasNext()) {
-                        val found = find(value.opt(it.next()))
-                        if (!found.isNullOrBlank()) return found
-                    }
+        val choices = json.optJSONArray("choices")
+        val message = choices?.optJSONObject(0)?.optJSONObject("message")
+        val content = message?.opt("content")
+        return when (content) {
+            is String -> content.trim()
+            is JSONArray -> {
+                val parts = mutableListOf<String>()
+                for (i in 0 until content.length()) {
+                    val part = content.optJSONObject(i)?.optString("text").orEmpty()
+                    if (part.isNotBlank()) parts.add(part)
                 }
-                is JSONArray -> {
-                    for (i in 0 until value.length()) {
-                        val found = find(value.opt(i))
-                        if (!found.isNullOrBlank()) return found
-                    }
-                }
-                is String -> if (value.isNotBlank()) return value
+                parts.joinToString("\n").trim()
             }
-            return null
+            else -> ""
         }
-        return find(json)?.trim() ?: raw.trim().takeIf { it.isNotBlank() && !it.startsWith("{") }.orEmpty()
     }
 
     private fun addMessage(role: String, value: String): View {
