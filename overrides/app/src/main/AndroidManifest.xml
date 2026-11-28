@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
@@ -19,6 +20,7 @@
             </intent-filter>
         </activity>
         <service android:name=".AiOverlayPanelService" android:exported="false" />
+        <service android:name=".LensCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection" />
         <service android:name=".LensSelectionOverlayService" android:exported="false" />
         <service android:name=".LensResultOverlayService" android:exported="false" />
         <service
