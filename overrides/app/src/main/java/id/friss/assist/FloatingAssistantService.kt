@@ -38,6 +38,7 @@ class FloatingAssistantService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotification()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         opacity = prefs.getInt("bubble_opacity", 85).coerceIn(0, 100)
@@ -200,7 +201,9 @@ class FloatingAssistantService : Service() {
     override fun onDestroy() {
         removePanel()
         bubble?.let { try { windowManager.removeView(it) } catch (_: Exception) {} }
-        bubble = null; super.onDestroy()
+        bubble = null
+        if (instance === this) instance = null
+        super.onDestroy()
     }
     override fun onBind(intent: Intent?) = null
 
