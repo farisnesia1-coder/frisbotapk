@@ -1,0 +1,8 @@
+name = "friss-ai-gateway"
+main = "src/index.js"
+compatibility_date = "2026-11-28"
+
+# Set ENRAI_API_KEY as a Worker Secret; never put it in this file.
+# Optional non-secret default model:
+# [vars]
+# ENRAI_MODEL = "your-supported-model"
