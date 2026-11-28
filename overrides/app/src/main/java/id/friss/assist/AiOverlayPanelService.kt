@@ -129,9 +129,9 @@ class AiOverlayPanelService : Service() {
 
         val lp = WindowManager.LayoutParams(
             (resources.displayMetrics.widthPixels - dp(28)).coerceAtLeast(dp(260)),
-            (resources.displayMetrics.heightPixels * 0.76f).toInt().coAtLeast(dp(360)),
+            (resources.displayMetrics.heightPixels * 0.76f).toInt().coerceAtLeast(dp(360)),
             overlayType(),
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM.inv(),
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
