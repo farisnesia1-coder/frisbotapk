@@ -136,6 +136,9 @@ class FloatingAssistantService : Service() {
             })
         }
         addLabel(box, "Kecerahan layar"); box.addView(brightnessSeek)
+        addAction(box, "AI Assistant", true) {
+            startService(Intent(this@FloatingAssistantService, AiOverlayPanelService::class.java))
+        }
         addAction(box, "Google Lens", true) {
             // Hilangkan panel dari layar sebelum Accessibility mengambil screenshot.
             removePanel()
