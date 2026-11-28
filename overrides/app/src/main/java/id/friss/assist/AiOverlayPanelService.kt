@@ -179,7 +179,7 @@ class AiOverlayPanelService : Service() {
 
     private fun showSizeOptions() {
         val options = arrayOf("Kecil (60% layar)", "Sedang (76% layar)", "Besar (88% layar)")
-        val heights = intArrayOf(0.60f, 0.76f, 0.88f).map { (resources.displayMetrics.heightPixels * it).toInt() }.toIntArray()
+        val heights = floatArrayOf(0.60f, 0.76f, 0.88f).map { (resources.displayMetrics.heightPixels * it).toInt() }.toIntArray()
         AlertDialog.Builder(this)
             .setTitle("Ukuran jendela AI")
             .setItems(options) { _, which ->
