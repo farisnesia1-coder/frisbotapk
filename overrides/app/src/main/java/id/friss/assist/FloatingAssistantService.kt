@@ -207,4 +207,8 @@ class FloatingAssistantService : Service() {
     }
     override fun onBind(intent: Intent?) = null
 
+    companion object {
+        @Volatile private var instance: FloatingAssistantService? = null
+        fun hidePanelForLens() { instance?.removePanel() }
+    }
 }
