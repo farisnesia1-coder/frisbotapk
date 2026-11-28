@@ -85,6 +85,28 @@ class AiOverlayPanelService : Service() {
         header.addView(close, LinearLayout.LayoutParams(dp(76), dp(40)))
         page.addView(header)
 
+        val readScreen = Button(this).apply {
+            text = "Baca Layar (tanpa OCR)"; isAllCaps = false; textSize = 13f
+            setTextColor(Color.WHITE); backgroundTintList = android.content.res.ColorStateList.valueOf(blue)
+            setOnClickListener {
+                isEnabled = false
+                text = "Membaca..."
+                AccessibilityCaptureService.requestReadScreen(applicationContext) { screenText ->
+                    main.post {
+                        isEnabled = true
+                        text = "Baca Layar (tanpa OCR)"
+                        if (screenText.isBlank()) {
+                            addMessage("assistant", "Gua belum menemukan teks yang bisa diakses di aplikasi itu. Bisa jadi aplikasinya tidak mengekspos teks ke Accessibility.")
+                        } else {
+                            input.setText("Tolong analisis dan jelaskan isi layar ini:\n\n" + screenText.take(10000))
+                            sendMessage()
+                        }
+                    }
+                }
+            }
+        }
+        page.addView(readScreen, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(12) })
+
         val lens = Button(this).apply {
             text = "⌕   Cari dengan Google Lens"; isAllCaps = false; textSize = 13f
             setTextColor(Color.WHITE); backgroundTintList = android.content.res.ColorStateList.valueOf(blue)
@@ -96,7 +118,7 @@ class AiOverlayPanelService : Service() {
                 }, 400)
             }
         }
-        page.addView(lens, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(12) })
+        page.addView(lens, LinearLayout.LayoutParams(-1, dp(42)).apply { topMargin = dp(6) })
 
         scroll = ScrollView(this).apply {
             isFillViewport = false
