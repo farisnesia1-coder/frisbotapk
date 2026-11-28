@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 
 class AccessibilityCaptureService : AccessibilityService() {
@@ -18,6 +19,48 @@ class AccessibilityCaptureService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
     override fun onInterrupt() = Unit
+
+    // Reads exposed UI text only after an explicit user tap. No screenshot or OCR.
+    private fun readCurrentWindowText(onResult: (String) -> Unit) {
+        try {
+            val targetRoot = windows.asSequence()
+                .filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
+                .mapNotNull { it.root }
+                .firstOrNull { it.packageName?.toString() != packageName }
+                ?: rootInActiveWindow?.takeIf { it.packageName?.toString() != packageName }
+
+            if (targetRoot == null) {
+                onResult("")
+                return
+            }
+
+            val output = LinkedHashSet<String>()
+            var visited = 0
+            fun walk(node: AccessibilityNodeInfo, depth: Int) {
+                if (depth > 14 || visited >= 1200) return
+                visited++
+                val text = node.text?.toString()?.trim().orEmpty()
+                val description = node.contentDescription?.toString()?.trim().orEmpty()
+                if (text.isNotBlank()) output.add(text)
+                if (description.isNotBlank() && description != text) output.add(description)
+                for (index in 0 until node.childCount) {
+                    val child = try { node.getChild(index) } catch (_: Exception) { null } ?: continue
+                    walk(child, depth + 1)
+                    child.recycle()
+                    if (visited >= 1200) break
+                }
+            }
+            walk(targetRoot, 0)
+            targetRoot.recycle()
+            onResult(output.joinToString("\n").take(12000))
+        } catch (_: Exception) {
+            onResult("")
+        }
+    }
+
+    fun requestReadScreen(onResult: (String) -> Unit) {
+        readCurrentWindowText(onResult)
+    }
 
     fun captureCurrentScreen() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -69,6 +112,16 @@ class AccessibilityCaptureService : AccessibilityService() {
 
     companion object {
         @Volatile private var instance: AccessibilityCaptureService? = null
+
+        fun requestReadScreen(context: Context, onResult: (String) -> Unit) {
+            val service = instance
+            if (service == null) {
+                Toast.makeText(context, "Aktifkan layanan Accessibility FRISS terlebih dahulu.", Toast.LENGTH_LONG).show()
+                onResult("")
+                return
+            }
+            service.requestReadScreen(onResult)
+        }
 
         fun requestCapture(context: Context) {
             val service = instance
