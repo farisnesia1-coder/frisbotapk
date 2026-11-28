@@ -62,9 +62,9 @@ class AiOverlayPanelService : Service() {
         if (root != null) return
         val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(12))
-            background = rounded(Color.WHITE, 24, 0xFFD8E7FA.toInt())
-            elevation = dp(18).toFloat()
+            setPadding(dp(13), dp(12), dp(13), dp(10))
+            background = rounded(Color.WHITE, 26, 0xFFD8E7FA.toInt())
+            elevation = dp(20).toFloat()
         }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         val heading = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -168,9 +168,13 @@ class AiOverlayPanelService : Service() {
         }
         page.addView(resizeGrip, LinearLayout.LayoutParams(-1, dp(30)))
 
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val compactWidth = minOf((screenWidth * 0.88f).toInt(), dp(420)).coerceAtLeast(dp(260))
+        val compactHeight = (screenHeight * 0.58f).toInt().coerceAtLeast(dp(320))
         val lp = WindowManager.LayoutParams(
-            (resources.displayMetrics.widthPixels - dp(28)).coerceAtLeast(dp(260)),
-            (resources.displayMetrics.heightPixels * 0.76f).toInt().coerceAtLeast(dp(360)),
+            compactWidth,
+            compactHeight,
             overlayType(),
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
@@ -198,9 +202,9 @@ class AiOverlayPanelService : Service() {
         } catch (_: Exception) { root = null; panelParams = null; stopSelf() }
     }
 
-    private var sizePreset = 1
+    private var sizePreset = 0
     private fun cyclePanelSize() {
-        val heights = floatArrayOf(0.60f, 0.76f, 0.88f)
+        val heights = floatArrayOf(0.48f, 0.62f, 0.78f)
         sizePreset = (sizePreset + 1) % heights.size
         basePanelHeight = (resources.displayMetrics.heightPixels * heights[sizePreset]).toInt().coerceAtLeast(dp(320))
         panelParams?.let { it.height = basePanelHeight; try { root?.let { view -> wm.updateViewLayout(view, it) } } catch (_: Exception) {} }
@@ -219,7 +223,7 @@ class AiOverlayPanelService : Service() {
                 resizeStartWidth = params.width; resizeStartHeight = basePanelHeight
             }
             MotionEvent.ACTION_MOVE -> {
-                val maxWidth = resources.displayMetrics.widthPixels - dp(16)
+                val maxWidth = minOf(resources.displayMetrics.widthPixels - dp(24), dp(480))
                 val minWidth = dp(260)
                 params.width = (resizeStartWidth + ((event.rawX - resizeStartX) * 2).toInt()).coerceIn(minWidth, maxWidth)
                 basePanelHeight = (resizeStartHeight + ((event.rawY - resizeStartY) * 2).toInt()).coerceIn(dp(320), (resources.displayMetrics.heightPixels * 0.92f).toInt())
@@ -242,7 +246,7 @@ class AiOverlayPanelService : Service() {
         waiting = true
         sendButton.isEnabled = false
         sendButton.text = "..."
-        val loading = addMessage("assistant", "FRISS AI sedang berpikir...")
+        val loading = addMessage("assistant", "FRISS AI sedang mengetik  ···")
         executor.execute {
             try {
                 val context = history.takeLast(10).joinToString("\n") { (role, value) ->
@@ -327,7 +331,7 @@ class AiOverlayPanelService : Service() {
             setPadding(dp(12), dp(10), dp(12), dp(10))
             background = rounded(if (role == "user") blue else 0xFFF0F5FC.toInt(), 16,
                 if (role == "user") blue else 0xFFE3ECF7.toInt())
-            maxWidth = (resources.displayMetrics.widthPixels * 0.76f).toInt()
+            maxWidth = (resources.displayMetrics.widthPixels * 0.70f).toInt()
         }
         row.addView(bubble)
         messages.addView(row, LinearLayout.LayoutParams(-1, -2))
