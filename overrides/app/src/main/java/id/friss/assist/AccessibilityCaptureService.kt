@@ -21,38 +21,74 @@ class AccessibilityCaptureService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     // Reads exposed UI text only after an explicit user tap. No screenshot or OCR.
+    // Try every visible application window instead of trusting the first window returned
+    // by Android (which may be an empty/system window).
     private fun readCurrentWindowText(onResult: (String) -> Unit) {
         try {
-            val targetRoot = windows.asSequence()
-                .filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
-                .mapNotNull { it.root }
-                .firstOrNull { it.packageName?.toString() != packageName }
-                ?: rootInActiveWindow?.takeIf { it.packageName?.toString() != packageName }
-
-            if (targetRoot == null) {
-                onResult("")
-                return
-            }
-
-            val output = LinkedHashSet<String>()
-            var visited = 0
-            fun walk(node: AccessibilityNodeInfo, depth: Int) {
-                if (depth > 14 || visited >= 1200) return
-                visited++
-                val text = node.text?.toString()?.trim().orEmpty()
-                val description = node.contentDescription?.toString()?.trim().orEmpty()
-                if (text.isNotBlank()) output.add(text)
-                if (description.isNotBlank() && description != text) output.add(description)
-                for (index in 0 until node.childCount) {
-                    val child = try { node.getChild(index) } catch (_: Exception) { null } ?: continue
-                    walk(child, depth + 1)
-                    child.recycle()
-                    if (visited >= 1200) break
+            val candidates = mutableListOf<Pair<Int, AccessibilityNodeInfo>>()
+            try {
+                for (window in windows) {
+                    if (window.type != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) continue
+                    val node = try { window.root } catch (_: Exception) { null } ?: continue
+                    val owner = node.packageName?.toString()
+                    if (owner.isNullOrBlank() || owner == packageName) {
+                        node.recycle()
+                        continue
+                    }
+                    val priority = (if (window.isActive) 100000 else 0) +
+                        (if (window.isFocused) 50000 else 0) + window.layer
+                    candidates.add(priority to node)
                 }
+            } catch (_: Exception) {
+                // Some Android builds restrict window enumeration; active-root fallback below.
             }
-            walk(targetRoot, 0)
-            targetRoot.recycle()
-            onResult(output.joinToString("\n").take(12000))
+
+            try {
+                val active = rootInActiveWindow
+                if (active != null && active.packageName?.toString() != packageName) {
+                    candidates.add(Int.MAX_VALUE to active)
+                } else {
+                    active?.recycle()
+                }
+            } catch (_: Exception) {}
+
+            var bestText = ""
+            val ordered = candidates.sortedByDescending { it.first }
+            for ((_, targetRoot) in ordered) {
+                try {
+                    val output = LinkedHashSet<String>()
+                    var visited = 0
+                    fun walk(node: AccessibilityNodeInfo, depth: Int) {
+                        if (depth > 20 || visited >= 2500 || output.sumOf { it.length } >= 20000) return
+                        visited++
+                        fun add(value: CharSequence?) {
+                            val valueText = value?.toString()?.trim().orEmpty()
+                            if (valueText.isNotBlank()) output.add(valueText)
+                        }
+                        add(node.text)
+                        add(node.contentDescription)
+                        if (Build.VERSION.SDK_INT >= 26) add(node.hintText)
+                        if (Build.VERSION.SDK_INT >= 28) {
+                            add(node.paneTitle)
+                            add(node.tooltipText)
+                        }
+                        for (index in 0 until node.childCount) {
+                            if (visited >= 2500 || output.sumOf { it.length } >= 20000) break
+                            val child = try { node.getChild(index) } catch (_: Exception) { null } ?: continue
+                            try { walk(child, depth + 1) } finally { child.recycle() }
+                        }
+                    }
+                    walk(targetRoot, 0)
+                    val extracted = output.joinToString("\n").take(20000)
+                    if (extracted.length > bestText.length) bestText = extracted
+                } catch (_: Exception) {
+                    // Continue to the next visible app window.
+                } finally {
+                    try { targetRoot.recycle() } catch (_: Exception) {}
+                }
+                if (bestText.length >= 20000) break
+            }
+            onResult(bestText)
         } catch (_: Exception) {
             onResult("")
         }
